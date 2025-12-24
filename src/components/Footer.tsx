@@ -10,34 +10,34 @@ const Footer = () => {
         <span className="text-sm text-gray-800 sm:text-center dark:text-gray-400">
           © 2023{" "}
           <Link
-            href="https://tehseen-site.vercel.app/"
+            href="https://Ansh-site.vercel.app/"
             className="hover:underline"
           >
-            Tehseen
+            Ansh
           </Link>
           . All Rights Reserved.
         </span>
         <ul className="flex flex-wrap gap-4 items-center mt-3 text-sm font-medium text-gray-800 dark:text-gray-400 sm:mt-0">
           <li>
-            <Link href="https://github.com/tehseen01" target="_blank">
+            <Link href="https://github.com/Ansh-dhanani" target="_blank">
               <Icon name="github" />
             </Link>
           </li>
           <li>
-            <Link href="https://twitter.com/tehseen_type" target="_blank">
+            <Link href="https://twitter.com/AnshDhanan64704" target="_blank">
               <Icon name="twitter" />
             </Link>
           </li>
           <li>
             <Link
-              href="https://www.linkedin.com/in/mohd-tehseen-962635271"
+              href="https://www.linkedin.com/in/ansh-dhanani/"
               target="_blank"
             >
               <Icon name="linkedin" />
             </Link>
           </li>
           <li>
-            <Link href="https://instagram.com/tehseen.01" target="_blank">
+            <Link href="https://instagram.com/dhanani._.ansh" target="_blank">
               <Icon name="instagram" />
             </Link>
           </li>

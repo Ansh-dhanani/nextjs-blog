@@ -6,6 +6,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { uploadImageToCloudinary } from "@/utils/uploadImageToCloudinary";
 
+// In-memory cache for view throttling (userId_or_ip -> postId -> lastViewTime)
+const viewCache = new Map<string, Map<string, number>>();
+const VIEW_COOLDOWN = 20 * 60 * 1000; // 20 minutes in milliseconds
+
 //@description     Get a single post
 //@route           GET /api/posts/[post.path]
 //@access          Not protected
@@ -14,6 +18,13 @@ export async function GET(
   { params }: { params: { postId: string } }
 ) {
   try {
+    const userId = getDataFromToken(req);
+    const clientIP = req.headers.get('x-forwarded-for') || 
+                     req.headers.get('x-real-ip') || 
+                     'anonymous';
+
+    // Use userId if logged in, otherwise use IP
+    const viewerId = userId || clientIP;
     const post = await prisma.post.findFirst({
       where: { path: params.postId },
       include: {
@@ -38,14 +49,50 @@ export async function GET(
           },
         },
         _count: { select: { comments: true } },
+        tags: true,
+        likes: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+        saved: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
       },
     });
 
     if (post) {
-      await prisma.post.update({
-        where: { id: post.id },
-        data: { views: post.views + 1 }, // Increment the views by 1
-      });
+      // Check if we should increment views (throttle to once per 20 minutes per user/IP)
+      const shouldIncrementViews = (() => {
+        const now = Date.now();
+        
+        // Get or create user's view cache
+        if (!viewCache.has(viewerId)) {
+          viewCache.set(viewerId, new Map());
+        }
+        
+        const userViews = viewCache.get(viewerId)!;
+        const lastViewTime = userViews.get(post.id);
+        
+        // If never viewed or cooldown passed, allow increment
+        if (!lastViewTime || (now - lastViewTime) >= VIEW_COOLDOWN) {
+          userViews.set(post.id, now);
+          return true;
+        }
+        
+        return false;
+      })();
+
+      if (shouldIncrementViews) {
+        await prisma.post.update({
+          where: { id: post.id },
+          data: { views: post.views + 1 }, // Increment the views by 1
+        });
+      }
     } else {
       return NextResponse.json(
         { success: false, message: "Post not found!" },
@@ -53,7 +100,17 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(post, { status: 200 });
+    // Replace null avatars with placeholder
+    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
+    const processedPost = {
+      ...post,
+      author: {
+        ...post.author,
+        avatar: post.author.avatar || placeholderImage,
+      },
+    };
+
+    return NextResponse.json(processedPost, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -117,6 +174,25 @@ export async function PATCH(req: NextRequest) {
       updatedData.type = type;
     }
 
+    // handle tags update (replace existing tags with provided tags array of values)
+    const body = await req.json();
+    const newTags: string[] | undefined = body.tags;
+    if (Array.isArray(newTags)) {
+      // find or create tags and prepare connect list
+      const connectTags: Array<{ id: string }> = [];
+      for (const val of newTags) {
+        const existing = await prisma.tag.findFirst({ where: { value: val } });
+        if (existing) connectTags.push({ id: existing.id });
+        else {
+          const created = await prisma.tag.create({
+            data: { label: val, value: val, description: "", color: "#7C3AED" },
+          });
+          connectTags.push({ id: created.id });
+        }
+      }
+      updatedData.tags = { set: connectTags } as any;
+    }
+
     if (Object.keys(updatedData).length > 0) {
       await prisma.post.update({
         where: { id: post.id },
@@ -175,11 +251,11 @@ export async function DELETE(req: NextRequest) {
 
     // Delete all comments and there replies associated with the post
     for (const deleteId of deleteToComment) {
-      const repliesToDelete = await prisma.reply.findMany({
-        where: { commentId: deleteId.id },
+      const repliesToDelete = await prisma.comment.findMany({
+        where: { parentId: deleteId.id },
       });
       for (const deleteReply of repliesToDelete) {
-        await prisma.reply.delete({
+        await prisma.comment.delete({
           where: { id: deleteReply.id },
         });
       }

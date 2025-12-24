@@ -1,7 +1,7 @@
 "use client";
 
 import { TUser } from "@/lib/types";
-import { Avatar, Button, useDisclosure } from "@nextui-org/react";
+import { Avatar, Button, useDisclosure } from "@heroui/react";
 import React from "react";
 
 import Icon from "../Icon";

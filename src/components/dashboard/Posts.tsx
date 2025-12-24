@@ -7,7 +7,7 @@ import {
   Select,
   SelectItem,
   useDisclosure,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import React, { useState } from "react";
 import Link from "next/link";

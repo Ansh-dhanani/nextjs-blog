@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Button, Input, Link } from "@nextui-org/react";
+import { Button, Input, Link } from "@heroui/react";
 
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,8 +16,12 @@ import axios from "axios";
 
 import toast from "react-hot-toast";
 
+import { useAppDispatch } from "@/hooks/reduxHooks";
+import { setAuthStatus, setUser } from "@/redux/authSlice";
+
 const Page = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const {
     register,
@@ -31,6 +35,8 @@ const Page = () => {
       const res = await axios.post("/api/auth/login", data);
 
       toast.success(res.data.message);
+      dispatch(setUser(res.data.user));
+      dispatch(setAuthStatus(true));
       reset();
 
       router.push("/");

@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
             id: true,
             path: true,
             title: true,
+            image: true,
             author: {
               select: {
                 id: true,
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(savedPost, { status: 200 });
   } catch (error: any) {
+    console.log("GET /api/posts/saved error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error: any) {
+    console.log("POST /api/posts/saved error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

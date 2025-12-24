@@ -8,7 +8,9 @@ export async function GET(req: NextRequest) {
     });
     response.cookies.set("token", "", {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       expires: new Date(0),
     });
 

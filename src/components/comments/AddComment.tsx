@@ -3,7 +3,7 @@
 import { useAppSelector } from "@/hooks/reduxHooks";
 
 import { TPost } from "@/lib/types";
-import { Avatar, Button, Textarea, useDisclosure } from "@nextui-org/react";
+import { Avatar, Button, Textarea, useDisclosure } from "@heroui/react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 

@@ -43,7 +43,14 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(user, { status: 200 });
+    // Replace null avatar with placeholder
+    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
+    const processedUser = user ? {
+      ...user,
+      avatar: user.avatar || placeholderImage,
+    } : null;
+
+    return NextResponse.json(processedUser, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

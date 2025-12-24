@@ -12,7 +12,7 @@ import {
   CardFooter,
   CardHeader,
   useDisclosure,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import axios from "axios";
 import Link from "next/link";
@@ -54,7 +54,7 @@ const UserProfileCard = ({ post }: { post: TPost }) => {
       <Card className="border" shadow="none" radius="sm">
         <CardHeader className="justify-between">
           <Link href={`/${post.author.username}`} className="flex gap-5">
-            <Avatar radius="full" size="md" src={post.author.avatar} />
+            <Avatar radius="full" size="md" src={post.author.avatar} name={post.author.name} />
             <div className="flex flex-col gap-1 items-start justify-center">
               <h4 className="font-semibold leading-none text-default-800">
                 {post.author.name}

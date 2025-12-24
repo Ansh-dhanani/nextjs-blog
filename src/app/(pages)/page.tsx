@@ -1,16 +1,14 @@
 "use client";
-
-import RightAside from "@/components/RightAside";
 import SideNav from "@/components/navbar/SideNav";
 import PostCard from "@/components/posts/PostCard";
 import { TPost } from "@/lib/types";
-import { Button, Skeleton } from "@nextui-org/react";
+import { Button, Skeleton } from "@heroui/react";
 import axios from "axios";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useAppDispatch } from "@/hooks/reduxHooks";
 import { setProgress } from "@/redux/commonSlice";
 import { useInView } from "react-intersection-observer";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 type PostWithTotalPage = {
   posts: TPost[];
@@ -23,11 +21,13 @@ export default function Home() {
 
   const dispatch = useAppDispatch();
 
+  const [sortBy, setSortBy] = useState<"latest" | "trending" | "for-you">("latest");
+
   const { data, isLoading, error, hasNextPage, fetchNextPage } =
     useInfiniteQuery({
-      queryKey: ["posts"],
+      queryKey: ["posts", sortBy],
       queryFn: async ({ pageParam = 1 }): Promise<PostWithTotalPage> => {
-        const { data } = await axios.get("/api/posts?page=" + pageParam);
+        const { data } = await axios.get(`/api/posts?page=${pageParam}&sort=${sortBy}`);
         return data;
       },
       getNextPageParam: (lastPage) => {
@@ -41,9 +41,11 @@ export default function Home() {
       refetchOnWindowFocus: false,
     });
 
-  if (isLoading) {
-    dispatch(setProgress(80));
-  }
+  useEffect(() => {
+    if (isLoading) {
+      dispatch(setProgress(80));
+    }
+  }, [isLoading, dispatch]);
 
   useEffect(() => {
     if (inView) {
@@ -57,11 +59,11 @@ export default function Home() {
         <aside className="max-md:hidden relative">
           <SideNav />
         </aside>
-        <main>
+        <main className="lg:col-span-2">
           <header className="mb-2">
-            <Button variant="light">For you</Button>
-            <Button variant="light">Latest</Button>
-            <Button variant="light">Trending</Button>
+            <Button variant={sortBy === "for-you" ? "solid" : "light"} onClick={() => setSortBy("for-you")}>For you</Button>
+            <Button variant={sortBy === "latest" ? "solid" : "light"} onClick={() => setSortBy("latest")}>Latest</Button>
+            <Button variant={sortBy === "trending" ? "solid" : "light"} onClick={() => setSortBy("trending")}>Trending</Button>
           </header>
           {/* ===POST CARD SKELETON=== */}
           {isLoading && (
@@ -127,7 +129,7 @@ export default function Home() {
             )}
           </div>
         </main>
-        <RightAside />
+        
       </div>
     </div>
   );

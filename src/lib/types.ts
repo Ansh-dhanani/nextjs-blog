@@ -6,15 +6,25 @@ export type TUser = {
   avatar: string;
   bio: string;
   posts: TPost[];
-  follower: [];
+  follower: TUser[];
   followerIDs: string[];
-  following: [];
+  following: TUser[];
   followingIDs: string[];
   followingTags: [];
   site: string;
   createdAt: Date;
   updatedAt: Date;
   comment: [];
+};
+
+export type TTag = {
+  id: string;
+  label: string;
+  value: string;
+  description: string;
+  color: string;
+  userId: string[];
+  postId: string[];
 };
 
 export type TPost = {
@@ -24,9 +34,11 @@ export type TPost = {
   content: any;
   path: string;
   author: TUser;
-  tags: string[];
+  tags: TTag[];
+  views: number;
   type: "PUBLISHED" | "DRAFT";
   comments: TComment[];
+  likes: TPostLike[];
   createdAt: Date;
   updatedAt: Date;
   saved: TSavedPost[];
@@ -43,6 +55,34 @@ export type TSavedPost = {
   post: TPost;
 };
 
+export type TPostLike = {
+  id: string;
+  userId: string;
+  postId: string;
+  createdAt: Date;
+};
+
+export type TCommentLike = {
+  id: string;
+  userId: string;
+  commentId: string;
+  createdAt: Date;
+};
+
+export type TNotification = {
+  id: string;
+  userId: string;
+  fromUser: TUser;
+  fromUserId: string;
+  post: TPost;
+  postId: string;
+  comment?: TComment;
+  commentId?: string;
+  type: "like" | "comment" | "reply";
+  isRead: boolean;
+  createdAt: Date;
+};
+
 export type TComment = {
   id: string;
   content: string;
@@ -50,27 +90,20 @@ export type TComment = {
   authorId: string;
   post: TPost;
   postId: string;
+  parentId?: string;
+  parent?: TComment;
+  replies: TComment[];
   createdAt: Date;
   updatedAt: Date;
-  replies: TReply[];
+  likes: TCommentLike[];
   _count: {
     replies: number;
+    likes: number;
   };
 };
 
-export type TReply = {
-  id: string;
-  content: string;
-  author: TUser;
-  authorId: string;
-  comment: TComment;
-  commentId: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 export type TCommentReplyOption = {
-  data: TComment | TReply;
+  data: TComment;
   type: "comment" | "reply";
   postPath: string;
 };

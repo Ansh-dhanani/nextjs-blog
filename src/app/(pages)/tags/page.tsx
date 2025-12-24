@@ -11,7 +11,7 @@ import {
   CardHeader,
   Chip,
   Input,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";

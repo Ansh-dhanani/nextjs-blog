@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, content, image, type } = await req.json();
+    const { title, content, image, type, tags } = await req.json(); // tags: string[] of tag values (labels)
 
     const makePath = title.split(" ").join("-").toLowerCase();
 
@@ -28,6 +28,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // handle tags: tags is optional array of tag values
+    let connectTags: Array<{ id: string }> = [];
+    if (Array.isArray(tags) && tags.length > 0) {
+      for (const val of tags) {
+        const existing = await prisma.tag.findFirst({ where: { value: val } });
+        if (existing) connectTags.push({ id: existing.id });
+        else {
+          const created = await prisma.tag.create({
+            data: {
+              label: val,
+              value: val,
+              description: "",
+              color: "#7C3AED",
+            },
+          });
+          connectTags.push({ id: created.id });
+        }
+      }
+    }
+
     const newPost = await prisma.post.create({
       data: {
         title,
@@ -36,6 +56,7 @@ export async function POST(req: NextRequest) {
         authorId: userID,
         image: image !== null ? uploadedImage.secure_url : null,
         type,
+        tags: connectTags.length > 0 ? { connect: connectTags } : undefined,
       },
       include: {
         author: {
@@ -46,6 +67,7 @@ export async function POST(req: NextRequest) {
             avatar: true,
           },
         },
+        tags: true,
       },
     });
 
@@ -66,20 +88,34 @@ export async function GET(req: NextRequest) {
   try {
     const page = parseInt(req.nextUrl.searchParams.get("page") || "1");
     const limit = parseInt(req.nextUrl.searchParams.get("limit") || "10");
+    const sort = req.nextUrl.searchParams.get("sort") || "latest";
 
     const skip = (page - 1) * limit;
 
-    const totalPostsCount = await prisma.post.count({
-      where: { NOT: { type: "DRAFT" } },
-    });
+    let where = { NOT: { type: "DRAFT" as const } };
+    let orderBy: any = { createdAt: "desc" };
+    let takeLimit = limit;
+    let totalPages = 1;
+    let totalPostsCount = 0;
 
-    const totalPages = Math.ceil(totalPostsCount / limit);
+    if (sort === "trending") {
+      orderBy = { views: "desc" };
+      takeLimit = 3; // Top 3 most viewed
+      totalPostsCount = 3;
+      totalPages = 1;
+    } else if (sort === "latest") {
+      orderBy = { createdAt: "desc" };
+      takeLimit = 3; // Top 3 latest
+      totalPostsCount = 3;
+      totalPages = 1;
+    } else {
+      totalPostsCount = await prisma.post.count({ where });
+      totalPages = Math.ceil(totalPostsCount / limit);
+    }
 
     const posts = await prisma.post.findMany({
-      where: { NOT: { type: "DRAFT" } },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where,
+      orderBy,
       include: {
         author: {
           select: {
@@ -89,18 +125,41 @@ export async function GET(req: NextRequest) {
             avatar: true,
           },
         },
-        saved: true,
+        saved: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+        likes: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
         _count: { select: { comments: true } },
+        tags: true,
       },
-      skip,
-      take: limit,
+      skip: sort === "trending" ? 0 : skip,
+      take: takeLimit,
     });
 
+    // Replace null avatars with placeholder
+    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
+    const processedPosts = posts.map(post => ({
+      ...post,
+      author: {
+        ...post.author,
+        avatar: post.author.avatar || placeholderImage,
+      },
+    }));
+
     return NextResponse.json(
-      { posts, totalPages, currentPage: page },
+      { posts: processedPosts, totalPages, currentPage: page },
       { status: 200 }
     );
   } catch (error: any) {
+    console.log("GET /api/posts error:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

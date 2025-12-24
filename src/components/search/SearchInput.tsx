@@ -2,7 +2,7 @@ import useQueryString from "@/hooks/useQueryString";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Icon from "../Icon";
-import { Input } from "@nextui-org/react";
+import { Input } from "@heroui/react";
 
 const SearchInput = () => {
   const router = useRouter();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector } from "@/hooks/reduxHooks";
-import { Button, Select, SelectItem } from "@nextui-org/react";
+import { Button, Select, SelectItem } from "@heroui/react";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";

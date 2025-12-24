@@ -2,9 +2,12 @@
   "name": "blog",
   "version": "0.1.0",
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate",
+    "seed": "ts-node --transpile-only prisma/seed.ts",
+    "clean-db": "ts-node --transpile-only prisma/clean-db.ts",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint"
@@ -21,9 +24,10 @@
     "@editorjs/quote": "^2.5.0",
     "@editorjs/raw": "^2.4.0",
     "@editorjs/table": "^2.2.2",
+    "@heroui/react": "^2.8.7",
+    "@heroui/theme": "^2.4.25",
     "@hookform/resolvers": "^3.2.0",
-    "@nextui-org/react": "^2.1.13",
-    "@prisma/client": "^5.2.0",
+    "@prisma/client": "^5.22.0",
     "@reduxjs/toolkit": "^1.9.5",
     "@tanstack/react-query": "^4.33.0",
     "@tanstack/react-query-devtools": "^4.33.0",
@@ -37,10 +41,11 @@
     "cloudinary": "^1.40.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
+    "dotenv": "^17.2.3",
     "editorjs-blocks-react-renderer": "^1.3.0",
     "eslint": "8.47.0",
     "eslint-config-next": "13.4.13",
-    "framer-motion": "^10.15.1",
+    "framer-motion": "^12.23.26",
     "jsonwebtoken": "^9.0.1",
     "lucide-react": "^0.265.0",
     "moment": "^2.29.4",
@@ -51,6 +56,7 @@
     "react-dom": "18.2.0",
     "react-hook-form": "^7.45.4",
     "react-hot-toast": "^2.4.1",
+    "react-icons": "^5.5.0",
     "react-intersection-observer": "^9.5.2",
     "react-redux": "^8.1.2",
     "react-syntax-highlighter": "^15.5.0",
@@ -59,6 +65,9 @@
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6",
     "zod": "^3.21.4"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.9",

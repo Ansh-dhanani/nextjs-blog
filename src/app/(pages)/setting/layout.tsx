@@ -2,7 +2,7 @@
 
 import Icon from "@/components/Icon";
 import Loading from "@/components/Loading";
-import { Button, Select, SelectItem } from "@nextui-org/react";
+import { Button, Select, SelectItem } from "@heroui/react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import React, { Suspense } from "react";

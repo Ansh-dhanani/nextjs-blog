@@ -13,7 +13,7 @@ import {
   FILTER_TAGS,
 } from "@/utils/constants";
 
-import { Button } from "@nextui-org/react";
+import { Button } from "@heroui/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense } from "react";
 

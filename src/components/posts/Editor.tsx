@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@nextui-org/react";
+import { Button } from "@heroui/react";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 
 import axios from "axios";
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -15,6 +15,7 @@ import Icon from "../Icon";
 import EditorJS from "@editorjs/editorjs";
 import { convertImageToBase64 } from "@/utils/convertImageTobase64";
 import { TPost } from "@/lib/types";
+import ImagePreviewModal from "@/components/ImagePreviewModal";
 
 type TForm = {
   title: string;
@@ -39,6 +40,26 @@ const Editor = ({ post }: { post: TPost | null }) => {
 
   const [imageFile, setImageFile] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [previewImageSrc, setPreviewImageSrc] = useState<string>("");
+  const [previewImageCaption, setPreviewImageCaption] = useState<string>("");
+
+  // tags UI state
+  const [tagInput, setTagInput] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedTags, setSelectedTags] = useState<
+    Array<{ id?: string; label: string; value: string }>
+  >(
+    post?.tags
+      ? post.tags.map((t: any) => ({
+          id: t.id,
+          label: t.label,
+          value: t.value,
+        }))
+      : []
+  );
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const suggestionTimeout = useRef<number | null>(null);
 
   const ref = useRef<EditorJS | undefined>(undefined);
 
@@ -52,6 +73,8 @@ const Editor = ({ post }: { post: TPost | null }) => {
     try {
       const blocks = await ref.current?.save();
 
+      const tagsToSend = selectedTags.map((t) => t.value);
+
       if (params.postId) {
         const res = await axios.patch(`/api/posts/${post?.path}`, {
           title: data.title,
@@ -60,6 +83,7 @@ const Editor = ({ post }: { post: TPost | null }) => {
           type: data.postType,
           postId: post?.id,
           userId: post?.author.id,
+          tags: tagsToSend,
         });
         toast.success(res.data.message);
         router.push(`/dashboard`);
@@ -69,6 +93,7 @@ const Editor = ({ post }: { post: TPost | null }) => {
           content: blocks,
           image: imageFile,
           type: data.postType,
+          tags: tagsToSend,
         });
         toast.success(res.data.message);
         if (data.postType === "DRAFT") {
@@ -96,6 +121,88 @@ const Editor = ({ post }: { post: TPost | null }) => {
     const file = e.target.files && e.target.files[0];
     const convertedImage = await convertImageToBase64(file);
     setImageFile(convertedImage);
+  };
+
+  const handleImagePreview = (src: string, caption?: string) => {
+    setPreviewImageSrc(src);
+    setPreviewImageCaption(caption || "Cover Image");
+    setIsImagePreviewOpen(true);
+  };
+
+  const closeImagePreview = () => {
+    setIsImagePreviewOpen(false);
+    setPreviewImageSrc("");
+    setPreviewImageCaption("");
+  };
+
+  // Tag helpers
+  const fetchSuggestions = async (q: string) => {
+    try {
+      setIsFetchingSuggestions(true);
+      const { data } = await axios.get(
+        `/api/tags/addTagInPost?q=${encodeURIComponent(q)}`
+      );
+      setSuggestions(data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsFetchingSuggestions(false);
+    }
+  };
+
+  const onTagInputChange = (v: string) => {
+    setTagInput(v);
+    if (suggestionTimeout.current)
+      window.clearTimeout(suggestionTimeout.current);
+    suggestionTimeout.current = window.setTimeout(() => {
+      if (v.trim().length > 0) fetchSuggestions(v.trim());
+      else setSuggestions([]);
+    }, 250) as unknown as number;
+  };
+
+  const addTag = async (val: string) => {
+    if (!val || selectedTags.some((t) => t.value === val)) return;
+    // check existing suggestion
+    const existing = suggestions.find(
+      (s) => s.value.toLowerCase() === val.toLowerCase()
+    );
+    if (existing) {
+      setSelectedTags((s) => [
+        ...s,
+        { id: existing.id, label: existing.label, value: existing.value },
+      ]);
+    } else {
+      // create tag via API
+      try {
+        const { data } = await axios.post(`/api/tags`, {
+          label: val,
+          value: val,
+        });
+        if (data.tag)
+          setSelectedTags((s) => [
+            ...s,
+            { id: data.tag.id, label: data.tag.label, value: data.tag.value },
+          ]);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    setTagInput("");
+    setSuggestions([]);
+  };
+
+  const removeTag = (value: string) => {
+    setSelectedTags((s) => s.filter((t) => t.value !== value));
+  };
+
+  const onTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (tagInput.trim().length > 0) addTag(tagInput.trim());
+    } else if (e.key === "Backspace" && tagInput === "") {
+      // remove last tag
+      setSelectedTags((s) => s.slice(0, -1));
+    }
   };
 
   const initEditor = useCallback(async () => {
@@ -162,7 +269,8 @@ const Editor = ({ post }: { post: TPost | null }) => {
   }, [isMounted, initEditor]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmitHandler)} className="h-full">
+    <>
+      <form onSubmit={handleSubmit(onSubmitHandler)} className="h-full">
       <nav className="bg-transparent flex justify-between md:px-6 px-2 py-2 items-center">
         <Button
           radius="sm"
@@ -230,13 +338,45 @@ const Editor = ({ post }: { post: TPost | null }) => {
 
       <div className="max-md:px-4 h-full overflow-y-auto">
         <div className="max-w-[650px] m-auto">
-          <div className="flex gap-8 ">
-            {!imageFile && (
-              <input
-                type="file"
-                {...register("image")}
-                onChange={handleImage}
-              />
+          <div className="flex flex-col gap-8 ">
+            {!imageFile && !post?.image && (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <div className="text-gray-500 mb-4">
+                  <svg
+                    className="mx-auto mb-2"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                  </svg>
+                  <p className="text-sm">Upload a cover image</p>
+                  <p className="text-xs">Recommended size: 1200x600px</p>
+                </div>
+                <Button
+                  color="primary"
+                  variant="ghost"
+                  onPress={() =>
+                    document.getElementById("image-upload")?.click()
+                  }
+                >
+                  Choose Image
+                </Button>
+                <input
+                  id="image-upload"
+                  type="file"
+                  {...register("image")}
+                  onChange={handleImage}
+                  className="hidden"
+                />
+              </div>
             )}
             {imageFile && (
               <figure className="relative w-full h-[300px] pt-2">
@@ -256,7 +396,8 @@ const Editor = ({ post }: { post: TPost | null }) => {
                   width={100}
                   height={100}
                   alt="post image"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => handleImagePreview(imageFile, "Cover Image")}
                 />
               </figure>
             )}
@@ -266,8 +407,48 @@ const Editor = ({ post }: { post: TPost | null }) => {
                 alt={post.title}
                 width={100}
                 height={100}
+                className="cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => handleImagePreview(post.image!, post.title)}
               />
             )}
+            <div className="flex-1">
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Tags</label>
+                <div className="flex items-center flex-wrap gap-2">
+                  {selectedTags.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className="px-2 py-1 rounded bg-gray-100 text-sm flex items-center gap-2"
+                      onClick={() => removeTag(t.value)}
+                    >
+                      <span>{t.label}</span>
+                      <span className="text-xs text-gray-500">×</span>
+                    </button>
+                  ))}
+                  <input
+                    value={tagInput}
+                    onChange={(e) => onTagInputChange(e.target.value)}
+                    onKeyDown={onTagKeyDown}
+                    placeholder="Add a tag and press Enter"
+                    className="outline-none text-sm flex-1 min-w-[120px]"
+                  />
+                </div>
+                {suggestions.length > 0 && tagInput.length > 0 && (
+                  <div className="mt-2 border rounded bg-white shadow-sm p-2 max-h-40 overflow-auto">
+                    {suggestions.map((s) => (
+                      <div
+                        key={s.id}
+                        className="py-1 px-2 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => addTag(s.value)}
+                      >
+                        {s.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <TextareaAutosize
             {...register("title", { required: true })}
@@ -279,6 +460,15 @@ const Editor = ({ post }: { post: TPost | null }) => {
         <div id="editor" className="prose max-w-full" />
       </div>
     </form>
+
+    {/* Image Preview Modal */}
+    <ImagePreviewModal
+      isOpen={isImagePreviewOpen}
+      onClose={closeImagePreview}
+      imageSrc={previewImageSrc}
+      caption={previewImageCaption}
+    />
+    </>
   );
 };
 

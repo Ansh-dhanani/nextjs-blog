@@ -9,7 +9,7 @@ import {
 import { convertImageToBase64 } from "@/utils/convertImageTobase64";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Avatar, Button, Input, Textarea } from "@nextui-org/react";
+import { Avatar, Button, Input, Textarea } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";

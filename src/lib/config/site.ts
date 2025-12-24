@@ -1,11 +1,11 @@
 export const siteConfig = {
   name: "next blog",
   description: "A Next.js blog app where users can read and write blog posts",
-  url: "https://next-blog-tehseen01.vercel.app",
+  url: "https://next-blog-Ansh.vercel.app",
   ogImage: "https://tx.shadcn.com/og.jpg",
   links: {
-    twitter: "https://twitter.com/tehseen01",
-    github: "https://github.com/tehseen01/nextjs-blog",
+    twitter: "https://twitter.com/AnshDhanan64704",
+    github: "https://github.com/Ansh-dhanani",
   },
 };
 
@@ -24,11 +24,11 @@ export const siteConfig = {
 //   ],
 //   authors: [
 //     {
-//       name: "tehseen",
-//       url: "https://tehseen-site.vercel.app",
+//       name: "Ansh",
+//       url: "https://Ansh-site.vercel.app",
 //     },
 //   ],
-//   creator: "tehseen",
+//   creator: "Ansh",
 //   openGraph: {
 //     type: "website",
 //     locale: "en_US",

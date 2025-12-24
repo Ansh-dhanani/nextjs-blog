@@ -16,8 +16,8 @@ import {
   NavbarContent,
   NavbarItem,
   useDisclosure,
-} from "@nextui-org/react";
-import React from "react";
+} from "@heroui/react";
+import React, { useState } from "react";
 import Icon from "../Icon";
 import Link from "next/link";
 import axios from "axios";
@@ -26,17 +26,21 @@ import { setAuthStatus } from "@/redux/authSlice";
 
 const NavbarProfile = () => {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
 
   const logoutHandle = async () => {
+    setIsLoggingOut(true);
     try {
-      const { data } = await axios.get("/api/auth/logout");
+      const { data } = await axios.get("/api/auth/logout", { withCredentials: true });
       console.log(data);
       dispatch(setAuthStatus(false));
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -68,7 +72,7 @@ const NavbarProfile = () => {
           </Button>
         </NavbarItem>
         <NavbarItem>
-          <Button as={Link} href={"/"} isIconOnly variant="light">
+          <Button as={Link} href={"/notifications"} isIconOnly variant="light">
             <Icon name="bell" strokeWidth={1.25} className="hover:fill-black" />
           </Button>
         </NavbarItem>
@@ -148,6 +152,7 @@ const NavbarProfile = () => {
                   as={Link}
                   href="/"
                   className="hover:opacity-100 opacity-80"
+                  isLoading={isLoggingOut}
                 >
                   Log out
                 </Button>

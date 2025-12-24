@@ -8,6 +8,7 @@ export const getDataFromToken = (req: NextRequest) => {
 
     return decodedToken.id;
   } catch (error: any) {
-    return new Error(error.message);
+    console.log("getDataFromToken error:", error);
+    return null;
   }
 };

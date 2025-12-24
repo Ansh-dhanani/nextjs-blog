@@ -7,7 +7,7 @@ import {
   CardFooter,
   CardHeader,
   User,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import React from "react";
 import Icon from "./Icon";
 import { useQuery } from "@tanstack/react-query";
@@ -21,9 +21,10 @@ const RightAside = () => {
 
   const { data } = useQuery(["posts", "saved"], {
     queryFn: async (): Promise<TSavedPost[]> => {
-      const { data } = await axios.get("/api/posts/saved");
+      const { data } = await axios.get("/api/posts/saved", { withCredentials: true });
       return data;
     },
+    enabled: authStatus,
   });
 
   return (
@@ -72,31 +73,34 @@ const RightAside = () => {
                   key={saved.id}
                   radius="sm"
                   shadow="none"
-                  className="border mb-2 p-2"
+                  className="border mb-2 p-3"
                 >
-                  <CardBody className="p-2">
+                  <CardBody className="p-3 pb-0">
                     <div className="flex">
                       <Link
-                        className="font-semibold break-all hover:text-primary-600"
+                        className="font-semibold break-all hover:text-primary-600 block truncate"
                         href={`/${saved.post.author.username}/${saved.post.path}`}
                       >
                         {saved.post.title}
                       </Link>
                     </div>
                   </CardBody>
-                  <CardFooter className="p-2 flex justify-between">
-                    <User
-                      name={saved.post.author.name}
-                      description={"@" + saved.post.author.username}
-                      avatarProps={{
-                        src: saved.post.author.avatar,
-                      }}
-                      as={Link}
-                      href={`/${saved.post.author.username}`}
-                    />
-                    <div>
-                      <Button isIconOnly variant="light">
-                        <Icon name="bookmark" strokeWidth={1.25} fill="black" />
+                  <CardFooter className="p-3 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <User
+                        name={saved.post.author.name}
+                        description={"@" + saved.post.author.username}
+                        avatarProps={{
+                          src: saved.post.author.avatar,
+                          name: saved.post.author.name,
+                        }}
+                        as={Link}
+                        href={`/${saved.post.author.username}`}
+                      />
+                    </div>
+                    <div className="ml-2">
+                      <Button isIconOnly variant="light" size="sm">
+                        <Icon name="bookmark-fill" strokeWidth={1.25} className="h-5 w-5" />
                       </Button>
                     </div>
                   </CardFooter>

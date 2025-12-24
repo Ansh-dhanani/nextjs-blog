@@ -11,7 +11,7 @@ const GetCurrentUser = () => {
   useQuery(["me"], {
     queryFn: async () => {
       try {
-        const { data } = await axios.get("/api/users/me");
+        const { data } = await axios.get("/api/users/me", { withCredentials: true });
         return data;
       } catch (error) {
         console.log(error);

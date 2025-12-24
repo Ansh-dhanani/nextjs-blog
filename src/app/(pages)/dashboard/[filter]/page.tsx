@@ -7,7 +7,7 @@ import {
   CardBody,
   CardFooter,
   CardHeader,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
@@ -32,7 +32,7 @@ const DashboardFilterPage = ({ params }: { params: { filter: string } }) => {
               className="border p-4 flex items-center flex-col justify-center gap-2 rounded-md bg-default-50"
               key={follower.id}
             >
-              <Avatar src={follower.avatar} size="lg" />
+              <Avatar src={follower.avatar} size="lg" name={follower.name} />
               <h2 className="md:text-2xl text-xl font-semibold">
                 {follower.name}
               </h2>
@@ -54,7 +54,7 @@ const DashboardFilterPage = ({ params }: { params: { filter: string } }) => {
               className="border p-4 flex items-center flex-col justify-center gap-2 rounded-md bg-default-50"
               key={following.id}
             >
-              <Avatar src={following.avatar} size="lg" />
+              <Avatar src={following.avatar} size="lg" name={following.name} />
               <h2 className="md:text-2xl text-xl font-semibold">
                 {following.name}
               </h2>

@@ -66,7 +66,6 @@ export async function GET(req: NextRequest) {
             following: true,
             followingTags: true,
             posts: true,
-            replies: true,
           },
         },
       },

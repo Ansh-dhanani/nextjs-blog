@@ -40,12 +40,18 @@ export async function POST(req: NextRequest) {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as "lax" | "strict" | "none",
+      path: "/",
       expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     };
 
     const response = NextResponse.json(
-      { success: true, message: "Login successful" },
+      { 
+        success: true, 
+        message: "Login successful",
+        user: { id: user.id, name: user.name, username: user.username, email: user.email }
+      },
       { status: 200 }
     );
     response.cookies.set("token", token, options);

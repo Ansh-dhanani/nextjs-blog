@@ -6,7 +6,7 @@ import {
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
-} from "@nextui-org/react";
+} from "@heroui/react";
 
 import Icon from "../Icon";
 
@@ -41,7 +41,7 @@ const CommentOption = ({ data, type, postPath }: TCommentReplyOption) => {
 
   const deleteReply = async (id: string) => {
     try {
-      const { data } = await axios.delete(`/api/comment/reply?id=${id}`);
+      const { data } = await axios.delete(`/api/comment?id=${id}`);
       await queryClient.invalidateQueries(["comments", postPath]);
       await toast.success(data.message);
       console.log(data);

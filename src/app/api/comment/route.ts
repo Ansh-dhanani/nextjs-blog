@@ -34,9 +34,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await prisma.comment.create({
+    const comment = await prisma.comment.create({
       data: { content: content, authorId: userID, postId: postID },
     });
+
+    // Create notification if not commenting on own post
+    if (post.authorId !== userID) {
+      await prisma.notification.create({
+        data: {
+          userId: post.authorId,
+          fromUserId: userID,
+          postId: postID,
+          commentId: comment.id,
+          type: "comment",
+        },
+      });
+    }
 
     return NextResponse.json(
       { success: true, message: "Comment added successfully" },
@@ -60,9 +73,15 @@ export async function GET(req: NextRequest) {
 
     const comments = await prisma.comment.findMany({
       where: { postId: postId },
-      take: 10,
-      orderBy: { createdAt: "desc" },
-      include: {
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        content: true,
+        authorId: true,
+        postId: true,
+        parentId: true,
+        createdAt: true,
+        updatedAt: true,
         author: {
           select: {
             id: true,
@@ -73,27 +92,27 @@ export async function GET(req: NextRequest) {
             updatedAt: true,
           },
         },
-        replies: {
-          take: 10,
-          orderBy: { createdAt: "desc" },
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                avatar: true,
-                name: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-            },
+        likes: {
+          select: {
+            id: true,
+            userId: true,
           },
         },
-        _count: { select: { replies: true } },
+        _count: { select: { replies: true, likes: true } },
       },
     });
 
-    return NextResponse.json(comments, { status: 200 });
+    // Replace null avatars with placeholder
+    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
+    const processedComments = comments.map(comment => ({
+      ...comment,
+      author: {
+        ...comment.author,
+        avatar: comment.author.avatar || placeholderImage,
+      },
+    }));
+
+    return NextResponse.json(processedComments, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -128,17 +147,19 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Find and delete all associated replies
-    const repliesToDelete = await prisma.reply.findMany({
-      where: { commentId },
-    });
+    // Recursively delete comment and its replies
+    const deleteCommentRecursively = async (commentId: string) => {
+      const replies = await prisma.comment.findMany({
+        where: { parentId: commentId },
+        select: { id: true },
+      });
+      for (const reply of replies) {
+        await deleteCommentRecursively(reply.id);
+      }
+      await prisma.comment.delete({ where: { id: commentId } });
+    };
 
-    // Delete the associated replies
-    for (const reply of repliesToDelete) {
-      await prisma.reply.delete({ where: { id: reply.id } });
-    }
-
-    await prisma.comment.delete({ where: { id: commentId, authorId: userID } });
+    await deleteCommentRecursively(commentId);
 
     return NextResponse.json(
       { success: true, message: "Comment deleted successfully" },

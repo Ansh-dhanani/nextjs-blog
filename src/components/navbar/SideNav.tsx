@@ -1,4 +1,4 @@
-import { Button } from "@nextui-org/react";
+import { Button } from "@heroui/react";
 import Link from "next/link";
 import React from "react";
 import Icon from "../Icon";
@@ -8,10 +8,10 @@ const SideNav = () => {
     <nav className="sticky top-[90px] left-0 flex justify-between flex-col h-[calc(100vh_-_110px)]">
       <ul>
         {navLinks.map((link) => (
-          <li key={link.id}>
+          <li key={link.id} className="mb-2 group">
             <Button
               href={link.path ? `${link.path}` : "/"}
-              className="justify-start text-black hover:underline hover:text-primary group"
+              className="justify-start bg-gray-100 text-black hover:text-primary group"
               as={Link}
               variant="light"
               color="primary"
@@ -27,7 +27,7 @@ const SideNav = () => {
         <li>
           <Button
             as={Link}
-            href="https://github.com/tehseen01"
+            href="https://github.com/Ansh-dhanani"
             target="_blank"
             isIconOnly
             variant="light"
@@ -40,7 +40,7 @@ const SideNav = () => {
         <li>
           <Button
             as={Link}
-            href="https://x.com/tehseen_type"
+            href="https://x.com/AnshDhanan64704"
             target="_blank"
             isIconOnly
             variant="light"
@@ -53,7 +53,7 @@ const SideNav = () => {
         <li>
           <Button
             as={Link}
-            href="https://www.linkedin.com/in/tehseen01/"
+            href="https://www.linkedin.com/in/ansh-dhanani/"
             target="_blank"
             isIconOnly
             variant="light"
@@ -66,7 +66,7 @@ const SideNav = () => {
         <li>
           <Button
             as={Link}
-            href="https://www.instagram.com/tehseen.01/"
+            href="https://www.instagram.com/dhanani._.ansh/"
             target="_blank"
             isIconOnly
             variant="light"
@@ -93,47 +93,13 @@ export const navLinks = [
   {
     id: 2,
     label: "Reading List",
+    path: "/reading_list",
     icon: <Icon name="bookmark" strokeWidth={1.25} />,
   },
   {
-    id: 3,
-    label: "Listings",
-    icon: <Icon name="scroll-text" strokeWidth={1.25} />,
-  },
-  {
-    id: 4,
-    label: "Podcasts",
-    icon: <Icon name="mic" strokeWidth={1.25} />,
-  },
-  {
-    id: 5,
-    label: "Videos",
-    icon: <Icon name="youtube" strokeWidth={1.25} />,
-  },
-  {
-    id: 6,
-    label: "Tags",
-    path: "/tags",
-    icon: <Icon name="tag" strokeWidth={1.25} />,
-  },
-  {
-    id: 7,
-    label: "FAQ",
-    icon: <Icon name="lightbulb" strokeWidth={1.25} />,
-  },
-  {
-    id: 9,
-    label: "About",
-    icon: <Icon name="user" strokeWidth={1.25} />,
-  },
-  {
-    id: 10,
-    label: "Contact",
-    icon: <Icon name="contact" strokeWidth={1.25} />,
-  },
-  {
-    id: 11,
-    label: "Guides",
-    icon: <Icon name="book-open-check" strokeWidth={1.25} />,
-  },
+    id: 2.5,
+    label: "Notifications",
+    path: "/notifications",
+    icon: <Icon name="bell" strokeWidth={1.25} />,
+  }
 ];

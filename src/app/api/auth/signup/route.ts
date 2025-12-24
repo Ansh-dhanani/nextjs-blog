@@ -22,6 +22,19 @@ export async function POST(req: NextRequest, res: NextResponse) {
       );
     }
 
+    const existingUsername = await prisma.user.findUnique({
+      where: {
+        username: username,
+      },
+    });
+
+    if (existingUsername) {
+      return NextResponse.json(
+        { success: false, message: "Username already taken!" },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await bcryptjs.hash(password, 10);
 
     const newUser = await prisma.user.create({
@@ -46,7 +59,9 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
     const options = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as "lax" | "strict" | "none",
+      path: "/",
       expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     };
 
@@ -54,6 +69,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       {
         success: true,
         message: "Account created successfully",
+        user: { id: newUser.id, name: newUser.name, username: newUser.username, email: newUser.email }
       },
       { status: 200 }
     );

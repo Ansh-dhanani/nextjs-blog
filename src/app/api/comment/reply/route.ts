@@ -21,9 +21,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const reply = await prisma.reply.create({
-      data: { content: replyText, commentId: commentId, authorId: userID },
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { postId: true, authorId: true },
     });
+    if (!comment) {
+      return NextResponse.json(
+        { success: false, message: "Comment not found." },
+        { status: 404 }
+      );
+    }
+
+    const reply = await prisma.comment.create({
+      data: { content: replyText, parentId: commentId, postId: comment.postId, authorId: userID },
+    });
+
+    // Create notification for the post author if not replying to own comment/post
+    if (comment.authorId !== userID) {
+      await prisma.notification.create({
+        data: {
+          userId: comment.authorId,
+          fromUserId: userID,
+          postId: comment.postId,
+          commentId: reply.id,
+          type: "reply",
+        },
+      });
+    }
 
     return NextResponse.json(
       { success: true, message: "Reply added successfully", reply },
@@ -52,7 +76,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const existReply = await prisma.reply.findUnique({
+    const existReply = await prisma.comment.findUnique({
       where: { id: replyId, authorId: userID },
     });
     if (!existReply) {
@@ -62,7 +86,7 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const replyToDelete = await prisma.reply.delete({
+    const replyToDelete = await prisma.comment.delete({
       where: { id: replyId, authorId: userID },
     });
 

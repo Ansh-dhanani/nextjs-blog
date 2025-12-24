@@ -3,7 +3,7 @@
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Input, Button, Link } from "@nextui-org/react";
+import { Input, Button, Link } from "@heroui/react";
 
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,8 +13,12 @@ import { signUpSchema, signUpSchemaType } from "@/lib/validation/signUpSchema";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+import { useAppDispatch } from "@/hooks/reduxHooks";
+import { setAuthStatus, setUser } from "@/redux/authSlice";
+
 const Page = () => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const {
     register,
@@ -29,6 +33,8 @@ const Page = () => {
     try {
       const res = await axios.post(`/api/auth/signup`, data);
       toast.success(res.data.message);
+      dispatch(setUser(res.data.user));
+      dispatch(setAuthStatus(true));
       reset();
 
       router.push("/");

@@ -166,7 +166,19 @@ export async function GET(req: NextRequest) {
         break;
     }
 
-    return NextResponse.json(data, { status: 200 });
+    // Replace null avatars with placeholder
+    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
+    const processedData = Array.isArray(data) ? data.map(item => {
+      if (item.avatar !== undefined) {
+        return { ...item, avatar: item.avatar || placeholderImage };
+      }
+      if (item.author) {
+        return { ...item, author: { ...item.author, avatar: item.author.avatar || placeholderImage } };
+      }
+      return item;
+    }) : data;
+
+    return NextResponse.json(processedData, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
