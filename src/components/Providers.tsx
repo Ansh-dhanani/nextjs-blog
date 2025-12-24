@@ -45,7 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        {/* <AuthChecker /> */}
+        <AuthChecker />
         <HeroUIProvider>
           <Navbar />
           <Toaster />
