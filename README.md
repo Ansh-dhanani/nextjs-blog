@@ -32,7 +32,7 @@ This project uses the following technologies:
 
 To run this project locally, you need to have Node.js, npm, and MongoDB installed on your machine.
 
-1. Clone this repo to your local machine using `git clone https://github.com/tehseen01/nextjs-blog.git`
+1. Clone this repo to your local machine using `git clone https://github.com/Ansh01/nextjs-blog.git`
 2. Navigate to the project directory using `cd nextjs-blog`
 3. Install the dependencies using `npm install`
 4. Create a `.env` file in the root directory and add the following variables:
@@ -113,4 +113,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-If you have any questions or feedback about this project, feel free to contact me at [tehseen.type@gmail.com](mailto:tehseen.type@gmail.com).
+If you have any questions or feedback about this project, feel free to contact me at [Ansh.type@gmail.com](mailto:Ansh.type@gmail.com).
