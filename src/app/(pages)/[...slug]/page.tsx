@@ -65,7 +65,7 @@ const Page = ({ params }: TPostProp) => {
               404 - Post not found
             </h1>
             <p className="text-slate-600 mt-5 lg:text-lg">
-              The post you're looking for doesn't exist or has been removed.
+              The post you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
           </div>
         </div>
