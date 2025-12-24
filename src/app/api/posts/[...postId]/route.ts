@@ -15,7 +15,7 @@ const VIEW_COOLDOWN = 20 * 60 * 1000; // 20 minutes in milliseconds
 //@access          Not protected
 export async function GET(
   req: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: { postId: string[] } }
 ) {
   try {
     const userId = getDataFromToken(req);
@@ -25,8 +25,9 @@ export async function GET(
 
     // Use userId if logged in, otherwise use IP
     const viewerId = userId || clientIP;
+    const path = params.postId.join("/");
     const post = await prisma.post.findFirst({
-      where: { path: params.postId },
+      where: { path },
       include: {
         author: {
           select: {
@@ -37,7 +38,6 @@ export async function GET(
             bio: true,
             followerIDs: true,
             followingIDs: true,
-            site: true,
             posts: {
               take: 4,
               select: {
@@ -48,69 +48,69 @@ export async function GET(
             },
           },
         },
-        _count: { select: { comments: true } },
-        tags: true,
-        likes: {
+        tags: {
           select: {
             id: true,
-            userId: true,
+            label: true,
+            value: true,
+            color: true,
           },
         },
-        saved: {
+        _count: {
           select: {
-            id: true,
-            userId: true,
+            likes: true,
+            comments: true,
           },
         },
       },
     });
 
-    if (post) {
-      // Check if we should increment views (throttle to once per 20 minutes per user/IP)
-      const shouldIncrementViews = (() => {
-        const now = Date.now();
-        
-        // Get or create user's view cache
-        if (!viewCache.has(viewerId)) {
-          viewCache.set(viewerId, new Map());
-        }
-        
-        const userViews = viewCache.get(viewerId)!;
-        const lastViewTime = userViews.get(post.id);
-        
-        // If never viewed or cooldown passed, allow increment
-        if (!lastViewTime || (now - lastViewTime) >= VIEW_COOLDOWN) {
-          userViews.set(post.id, now);
-          return true;
-        }
-        
-        return false;
-      })();
-
-      if (shouldIncrementViews) {
-        await prisma.post.update({
-          where: { id: post.id },
-          data: { views: post.views + 1 }, // Increment the views by 1
-        });
-      }
-    } else {
+    if (!post) {
       return NextResponse.json(
         { success: false, message: "Post not found!" },
         { status: 404 }
       );
     }
 
-    // Replace null avatars with placeholder
-    const placeholderImage = "https://res.cloudinary.com/dayo1mpv0/image/upload/v1683686792/default/profile.jpg";
-    const processedPost = {
-      ...post,
-      author: {
-        ...post.author,
-        avatar: post.author.avatar || placeholderImage,
-      },
-    };
+    // Check if user liked the post
+    let isLiked = false;
+    if (userId) {
+      const like = await prisma.postLike.findFirst({
+        where: { userId, postId: post.id },
+      });
+      isLiked = !!like;
+    }
 
-    return NextResponse.json(processedPost, { status: 200 });
+    // Handle view increment with throttling
+    const shouldIncrementViews = (() => {
+      if (!viewCache.has(viewerId)) {
+        viewCache.set(viewerId, new Map());
+      }
+      const userViews = viewCache.get(viewerId)!;
+      const now = Date.now();
+      const lastViewTime = userViews.get(post.id);
+      
+      // If never viewed or cooldown passed, allow increment
+      if (!lastViewTime || (now - lastViewTime) >= VIEW_COOLDOWN) {
+        userViews.set(post.id, now);
+        return true;
+      }
+      
+      return false;
+    })();
+
+    if (shouldIncrementViews) {
+      await prisma.post.update({
+        where: { id: post.id },
+        data: { views: post.views + 1 }, // Increment the views by 1
+      });
+    }
+
+    return NextResponse.json({
+      ...post,
+      isLiked,
+      views: shouldIncrementViews ? post.views + 1 : post.views,
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -119,7 +119,10 @@ export async function GET(
 //@description     Update a single post
 //@route           PATCH /api/posts/[post.path]
 //@access          protected
-export async function PATCH(req: NextRequest) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { postId: string[] } }
+) {
   try {
     const { title, content, image, userId, postId, type } = await req.json();
 
@@ -148,30 +151,30 @@ export async function PATCH(req: NextRequest) {
 
     const updatedData: Prisma.PostUpdateInput = {};
 
-    if (title !== post.title) {
-      updatedData.title = title;
-    }
+    if (title !== undefined) updatedData.title = title;
+    if (content !== undefined) updatedData.content = content;
+    if (type !== undefined) updatedData.type = type;
 
-    if (content !== post.content) {
-      updatedData.content = content;
-    }
-
-    if (image !== post.image) {
-      if (post.image) {
+    // Handle image update
+    if (image !== undefined) {
+      if (image === null && post.image) {
+        // Delete existing image from Cloudinary
         const publicId = getPublicIdCloudinary(post.image);
-        await deleteFileFromCloudinary(publicId!, "articles");
-      }
-
-      if (image === null) {
+        if (publicId) {
+          await deleteFileFromCloudinary(publicId, "articles");
+        }
         updatedData.image = null;
-      } else {
-        const newImage = await uploadImageToCloudinary(image, "blog/articles");
-        updatedData.image = newImage.secure_url;
+      } else if (image && image !== post.image) {
+        // Upload new image and delete old if exists
+        if (post.image) {
+          const publicId = getPublicIdCloudinary(post.image);
+          if (publicId) {
+            await deleteFileFromCloudinary(publicId, "articles");
+          }
+        }
+        const uploadedImage = await uploadImageToCloudinary(image, "blog/articles");
+        updatedData.image = uploadedImage.secure_url;
       }
-    }
-
-    if (type !== post.type) {
-      updatedData.type = type;
     }
 
     // handle tags update (replace existing tags with provided tags array of values)
@@ -195,14 +198,14 @@ export async function PATCH(req: NextRequest) {
 
     if (Object.keys(updatedData).length > 0) {
       await prisma.post.update({
-        where: { id: post.id },
+        where: { id: postId },
         data: updatedData,
       });
     }
 
     return NextResponse.json(
-      { success: true, message: "Your post has updated successfully" },
-      { status: 201 }
+      { success: true, message: "Post updated successfully" },
+      { status: 200 }
     );
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
@@ -212,7 +215,10 @@ export async function PATCH(req: NextRequest) {
 //@description     Delete a single post
 //@route           DELETE /api/posts/[post.path]
 //@access          protected
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { postId: string[] } }
+) {
   try {
     const postId = req.nextUrl.searchParams.get("id");
     if (!postId) {
@@ -232,19 +238,36 @@ export async function DELETE(req: NextRequest) {
 
     const post = await prisma.post.findFirst({
       where: { id: postId, authorId: userID },
+      include: {
+        comments: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
+
     if (!post) {
       return NextResponse.json(
-        { success: false, message: "Post not found!" },
+        { success: false, message: "Post not found or you are not the author!" },
         { status: 404 }
       );
     }
 
+    // Delete image from Cloudinary if exists
     if (post.image) {
-      const publicID = getPublicIdCloudinary(post.image);
-      await deleteFileFromCloudinary(publicID!, "articles");
+      const publicId = getPublicIdCloudinary(post.image);
+      if (publicId) {
+        await deleteFileFromCloudinary(publicId, "articles");
+      }
     }
 
+    // Delete all likes associated with the post
+    await prisma.postLike.deleteMany({
+      where: { postId: post.id },
+    });
+
+    // Get all comments associated with the post
     const deleteToComment = await prisma.comment.findMany({
       where: { postId: post.id },
     });
